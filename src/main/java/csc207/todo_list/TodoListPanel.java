@@ -4,6 +4,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -27,7 +29,8 @@ public class TodoListPanel extends JPanel implements ActionListener {
     private final JLabel editStatus;
 
     public TodoListPanel() {
-        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        this.setLayout(new BorderLayout(8, 8));
+        this.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         todoList = new TodoList();
 
@@ -41,6 +44,7 @@ public class TodoListPanel extends JPanel implements ActionListener {
 
         JList<String> textList = new JList<>(textModel);
         JScrollPane scrollPane = new JScrollPane(textList);
+        scrollPane.setPreferredSize(new Dimension(500, 240));
 
         updateSelected = new JButton("Update Selected");
         updateSelected.setEnabled(false);
@@ -76,11 +80,19 @@ public class TodoListPanel extends JPanel implements ActionListener {
         buttons.add(updateSelected);
         buttons.add(save);
 
-        add(new JLabel("Enter adds a task; Update Selected edits it."));
-        add(textField);
-        add(scrollPane);
-        add(buttons);
-        add(editStatus);
+        // Only the central list grows vertically when the window is enlarged.
+        JPanel input = new JPanel(new BorderLayout(0, 4));
+        input.add(new JLabel("Task title (Enter adds; Update Selected edits):"),
+                BorderLayout.NORTH);
+        input.add(textField, BorderLayout.CENTER);
+
+        JPanel footer = new JPanel(new BorderLayout());
+        footer.add(buttons, BorderLayout.NORTH);
+        footer.add(editStatus, BorderLayout.SOUTH);
+
+        add(input, BorderLayout.NORTH);
+        add(scrollPane, BorderLayout.CENTER);
+        add(footer, BorderLayout.SOUTH);
     }
 
     private void loadJsonFromFile() {

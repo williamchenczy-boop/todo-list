@@ -373,7 +373,9 @@ Editing on `main` would mean replacing a selected string while separately rememb
 
 ## Verification and quick check
 
-All four application classes and both test classes compiled targeting Java 11 with Eclipse ECJ 3.37.0 on Java 17. JUnit Platform 1.10.2 ran **8 tests: 8 passed, 0 failed**. Tests exercise entity validation, duplicate titles, literal `" (done)"` text, selected-row updates, completion preservation, selection changes, deletion, and JSON save/reload. Swing interactions run on the event dispatch thread in headless mode.
+All four application classes and both test classes compiled targeting Java 11 with Eclipse ECJ 3.37.0 on Java 17. JUnit Platform 1.10.2 ran **9 tests: 9 passed, 0 failed**. Tests exercise entity validation, duplicate titles, literal `" (done)"` text, selected-row updates, completion preservation, selection changes, deletion, JSON save/reload, and window resizing. Swing interactions run on the event dispatch thread in headless mode.
+
+The resizing test reproduces a layout problem in the previous version: a vertical BoxLayout allowed the text field to grow taller as the window grew. The panel now uses a top input area, central scrollable list, and bottom controls. The input stays one line tall, while extra vertical space goes to the list.
 
 The UML sources were rendered with PlantUML and visually checked. `main` and `entity-refactor` were checked against their course branch commit IDs and remain unchanged. The Maven CLI and a desktop display were unavailable in the execution environment, so the project was compiled and tested directly with the compiler and JUnit jars; an interactive IntelliJ run remains a useful final local check.
 

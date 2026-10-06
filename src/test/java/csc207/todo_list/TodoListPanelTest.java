@@ -42,6 +42,33 @@ class TodoListPanelTest {
     }
 
     @Test
+    void resizingKeepsInputOneLineAndGivesExtraHeightToTheList() throws Exception {
+        SwingUtilities.invokeAndWait(() -> {
+            TodoListPanel panel = new TodoListPanel();
+            JTextField field = find(panel, JTextField.class);
+            JScrollPane scroll = find(panel, JScrollPane.class);
+            panel.setSize(520, 360);
+            layoutTree(panel);
+            assertEquals(field.getPreferredSize().height, field.getHeight());
+            int initialListHeight = scroll.getHeight();
+
+            panel.setSize(1200, 800);
+            layoutTree(panel);
+            assertEquals(field.getPreferredSize().height, field.getHeight());
+            assertEquals(initialListHeight + 440, scroll.getHeight());
+        });
+    }
+
+    private static void layoutTree(Container parent) {
+        parent.doLayout();
+        for (Component child : parent.getComponents()) {
+            if (child instanceof Container) {
+                layoutTree((Container) child);
+            }
+        }
+    }
+
+    @Test
     void completedEditSurvivesSaveAndReload() throws Exception {
         SwingUtilities.invokeAndWait(() -> {
             TodoListPanel panel = new TodoListPanel();
