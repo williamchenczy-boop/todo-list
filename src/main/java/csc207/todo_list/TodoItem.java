@@ -1,7 +1,7 @@
 package csc207.todo_list;
 
 public class TodoItem {
-  private final String title;
+  private String title;
   private boolean completed;
 
   public TodoItem(String title) {
@@ -15,6 +15,14 @@ public class TodoItem {
 
   public String getTitle() {
     return title;
+  }
+
+  /** Updates the title without changing the item's completion state. */
+  public void setTitle(String title) {
+    if (title == null || title.isBlank()) {
+      throw new IllegalArgumentException("A task title must not be blank.");
+    }
+    this.title = title.strip();
   }
 
   public boolean isCompleted() {

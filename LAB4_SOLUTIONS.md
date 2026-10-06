@@ -1,8 +1,35 @@
-# CSC207 Lab 4 — Completed Work
+# CSC207 Lab 4 — Worked Solution and Study Guide
 
-This file records the completed analysis, design work, scenario walk-throughs, comparison, implementation decisions, and reflection for **Lab 4: From Specifications to Design**.
+This file provides a worked example of the analysis, design, scenario walk-throughs, comparison, implementation decisions, and reflection for **Lab 4: From Specifications to Design**. Use it to prepare for the team discussion and explain the decisions in your own words; it is not a record of a team discussion or TA check-off.
 
 The starter code is preserved on `main`. The instructor's supplied entity design is preserved on `entity-refactor`. The completed work is on `lab4-complete`.
+
+## Open and run your completed branch
+
+If you have not cloned your fork:
+
+```bash
+git clone --branch lab4-complete https://github.com/williamchenczy-boop/todo-list.git
+cd todo-list
+```
+
+If it is already cloned, open its terminal and run:
+
+```bash
+git fetch origin
+git switch lab4-complete
+git pull --ff-only
+```
+
+Open `pom.xml` as a Maven project in IntelliJ, select JDK 11 or later, let Maven load dependencies, then run `src/main/java/csc207/app/Main.java`.
+
+- **Add:** type a title and press Enter, even if a row is selected.
+- **Edit:** select a row, change its title, click **Update Selected**.
+- **Complete/uncomplete:** focus the list, select a row, press Space.
+- **Delete:** focus the list, select a row, press Delete or Backspace.
+- **Persist:** click **Save** after committing edits. Save does not commit text still being edited.
+
+The course's [original lab instructions](README.md) remain available. The Part 5 in-lab exercise has a ten-minute limit and does not require a finished feature; this branch supplies a completed reference implementation for study. Description, due date, priority, filtering, sorting, and auto-save are design proposals below, not implemented features.
 
 ---
 
@@ -68,7 +95,7 @@ It then stores the result as the JSON `completed` boolean and strips the display
 
 #### Evaluation of the original representation
 
-This representation works, but it mixes **domain state** with **presentation text**. Whether a task is completed is part of the task itself, not part of how the GUI chooses to display the task. A better design uses a todo-item object with separate fields such as `title` and `completed`.
+This representation works for ordinary titles, but it mixes **domain state** with **presentation text**. A task whose literal title ends in `" (done)"` is mistaken for a completed task; the original save code also uses `replace(DONE, "")`, which removes matching text anywhere in the title. Whether a task is completed is part of the task itself, not part of how the GUI chooses to display the task. A better design uses a todo-item object with separate fields such as `title` and `completed`.
 
 ---
 
@@ -86,6 +113,7 @@ The important nouns in the specification are:
 - **priority level** — attribute of `TodoItem`; the priority values could be represented by an enum
 - **completion state** — boolean attribute of `TodoItem`
 - **persistent storage** — important system responsibility, but not necessarily a domain entity; it would be better separated into a persistence/data-access component in a larger design
+- **user / application** — context for the system, not separate domain entities in this single-user specification
 
 The important verb phrases and the responsibilities they suggest are:
 
@@ -100,19 +128,17 @@ The important verb phrases and the responsibilities they suggest are:
 | sort tasks | `TodoList` |
 | save/load tasks | persistence component rather than the entity itself |
 
+The full specification calls for **automatic** saving. An application component should ask the persistence component to save after successful changes and load at startup. That orchestration is outside the entity-only UML. The starter and this edit implementation retain the existing manual Save button.
+
 ### Proposed entity design
 
 The proposed design is stored in:
 
-`plantuml/StudentTodoListDesign.plantuml`
+[PlantUML source](plantuml/StudentTodoListDesign.plantuml)
 
-The central relationship is:
+![Proposed entity UML](plantuml/StudentTodoListDesign.svg)
 
-```text
-TodoList 1 ---- * TodoItem
-```
-
-`TodoList` owns the collection. Each `TodoItem` owns its own task-specific state.
+One `TodoList` contains zero or more `TodoItem` objects. `TodoList` owns the collection. Each `TodoItem` owns its own task-specific state. `Priority` and `SortKey` are enums, not independent task entities.
 
 A `TodoItem` has:
 
@@ -128,6 +154,8 @@ A `TodoList` has:
 
 This design keeps task state independent of Swing or any other user interface.
 
+Design assumptions to discuss: description may be empty, a missing due date is represented by `null`, and priority defaults to MEDIUM when creating a task. Proposed ordering is alphabetical title, earliest due date first with undated items last, and HIGH priority first. Filtering returns matching item references without deleting other tasks. These are proposed requirements, not extra code in this branch.
+
 ---
 
 ## Part 3 — Scenario Walk-Through
@@ -138,12 +166,15 @@ This design keeps task state independent of Swing or any other user interface.
 
 ### Walk-through
 
-1. The UI determines which task the user selected.
-2. The UI asks the `TodoList` to change the completion state of that item.
-3. `TodoList` locates the corresponding `TodoItem`.
-4. `TodoList` delegates the state change to that `TodoItem`.
-5. `TodoItem` changes `completed` from `false` to `true`.
-6. The UI reads the updated state and refreshes the displayed list.
+| Step | Responsible class | Information and collaboration | UML support |
+|---|---|---|---|
+| 1 | UI, outside the entity diagram | Identify the selected task's index in the current full list, e.g. `1` | UI calls the public entity API |
+| 2 | `TodoList` | Receive `markCompleted(1)` and locate `items.get(1)` | `items` relationship and `markCompleted(index)` |
+| 3 | `TodoList` and `TodoItem` | Delegate to the selected item's `markCompleted()` | Both methods appear on the diagram |
+| 4 | `TodoItem` | Set its own `completed` field to `true` | `completed` field and mutation responsibility |
+| 5 | UI and entities | Read `getItem(1).isCompleted()` and `getTitle()` to display updated state | All required query methods appear on the diagram |
+
+Starting with an incomplete item, the final value is `true`; the title and list size are unchanged. Calling `markCompleted` again leaves it completed. This differs from `toggleCompleted`, which reverses the state each time.
 
 ### Design check
 
@@ -154,7 +185,7 @@ The first draft must therefore provide:
 - a completion-changing responsibility on `TodoItem`;
 - a way to read the updated state.
 
-If `TodoItem` had only a `completed` field but no responsibility such as `markCompleted` or `toggleCompleted`, the scenario would reveal a design gap. The method must be added before the scenario can be completed using only the UML.
+Example revision: an initial draft with only the fields and add/remove/edit methods would stop at step 2: the list has no completion-changing operation. Even with that operation added, step 3 also requires `TodoItem.markCompleted()`. Add both methods and the read operations, then restart at step 1. The final diagram above supports every step without another change. This is a worked example of a revision, not a claim about what happened in a live team discussion.
 
 ### Design decision to explain to the TA
 
@@ -204,9 +235,7 @@ todoList.toggleCompleted(selectedIndex);
 
 The panel then rebuilds the Swing list model from entity data. The dependency is therefore:
 
-```text
-TodoListPanel -> TodoList -> TodoItem
-```
+`TodoListPanel` calls `TodoList`, which delegates to `TodoItem`.
 
 This is cleaner than using Swing's `DefaultListModel<String>` as the application's domain model.
 
@@ -250,6 +279,10 @@ The implementation on `lab4-complete` makes the smallest required changes:
 
 The completed flag is not recreated or inferred from text, so editing a completed task preserves its completion state.
 
+![Implemented editing UML](plantuml/ImplementedEditDesign.svg)
+
+[Implemented diagram source](plantuml/ImplementedEditDesign.plantuml). The original instructor diagram, `plantuml/TodoList.plantuml`, is retained as the baseline for comparison.
+
 ### Why this responsibility placement?
 
 The GUI should not reach inside `TodoItem` directly.
@@ -276,6 +309,22 @@ The short user story does not answer questions such as:
 
 For the implemented version, **Update Selected** is used as the explicit confirmation action, and changing the title does not change completion status.
 
+The concrete provisional choices are:
+
+| Behavioural question | Choice in this implementation |
+|---|---|
+| What confirms an edit? | Update Selected; Enter continues to add another item. |
+| What if no task is selected? | Update Selected is disabled; no task changes. |
+| What if the title is empty or all whitespace? | Show an inline message; keep the old title and selection so the user can correct the draft. |
+| How is surrounding whitespace handled? | Strip leading/trailing whitespace on edits; preserve internal spacing. |
+| What happens to completion, position, and selection? | Preserve all three. |
+| Can two tasks have the same title? | Yes; update the selected index, not the first matching title. |
+| What if selection changes before Update Selected? | Discard the uncommitted draft and show the newly selected task's title. |
+| Does Save commit the text field? | No. It saves the current entity state; click Update Selected first. |
+| Which details are editable? | Title only; the supplied code has no description/date/priority fields yet. |
+
+The existing add operation remains unchanged, including its permissive handling of blank titles. New-title validation across all operations would be a separate requirement. The entity setter enforces edit validation even when called without the GUI.
+
 ### 3. Which decisions describe what the user should observe?
 
 Examples of user-observable behavioural decisions:
@@ -301,9 +350,44 @@ Examples:
 
 These questions affect externally visible behaviour and therefore should be clarified as requirements rather than silently treated as Java implementation details.
 
+The reference implementation uses provisional answers above; those choices are not prescribed by the course user story.
+
+### Alternative design
+
+Enter could commit edits whenever an item is selected, but then adding needs an explicit New/Add action or a clear way to exit edit mode. A separate Update button preserves the starter keyboard behavior. An immutable `TodoItem` could instead be replaced by a new object, but the replacement must explicitly preserve completion and list position. A mutable title is the smaller change here.
+
+### Optional comparison with the original representation
+
+Editing on `main` would mean replacing a selected string while separately remembering whether its old value ended in `DONE`, then appending that suffix if needed. It can take fewer lines, but titles containing the marker are ambiguous and presentation rules leak into the edit operation. In the entity version, updating the title never has to inspect or rebuild completion state. The original branch is preserved for comparison; optional extra user stories are not implemented.
+
+## What to understand for your TA discussion
+
+1. A user story expresses a goal but does not specify every interaction or validation rule.
+2. Nouns suggest entities and attributes; verbs suggest responsibilities, not a mechanical one-to-one class/method list.
+3. A scenario walk-through must use operations actually present in the UML.
+4. `final String title` prevents reassignment of that field; String itself is still immutable after removing `final`. Editing assigns a different String to the field.
+5. Editing follows `TodoListPanel.updateSelectedItem` → `TodoList.updateTitle` → `TodoItem.setTitle` and then refreshes the display.
+6. Behavioral choices describe what users observe; implementation choices describe how code provides it.
+
 ---
 
-## Final structure
+## Verification and quick check
+
+All four application classes and both test classes compiled targeting Java 11 with Eclipse ECJ 3.37.0 on Java 17. JUnit Platform 1.10.2 ran **8 tests: 8 passed, 0 failed**. Tests exercise entity validation, duplicate titles, literal `" (done)"` text, selected-row updates, completion preservation, selection changes, deletion, and JSON save/reload. Swing interactions run on the event dispatch thread in headless mode.
+
+The UML sources were rendered with PlantUML and visually checked. `main` and `entity-refactor` were checked against their course branch commit IDs and remain unchanged. The Maven CLI and a desktop display were unavailable in the execution environment, so the project was compiled and tested directly with the compiler and JUnit jars; an interactive IntelliJ run remains a useful final local check.
+
+To rerun the tests with a local JDK and Maven:
+
+```bash
+mvn test
+```
+
+IntelliJ can also run `TodoListTest` and `TodoListPanelTest`. Maven tests use `target/` for temporary save files; tests restore any pre-existing save contents when run directly from an IDE.
+
+Quick interactive check: add two items, complete one, change its title with Update Selected, try a blank edit, click Save, close and reopen. Confirm that the edited item still has its completion state and that no extra item was created by Update Selected.
+
+## Branches
 
 - `main` — untouched original starter program.
 - `entity-refactor` — untouched instructor-provided entity solution.

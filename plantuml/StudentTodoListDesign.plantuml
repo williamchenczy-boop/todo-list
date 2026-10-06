@@ -1,0 +1,59 @@
+@startuml
+!pragma layout smetana
+title Proposed entity design for the full Part 2 specification
+top to bottom direction
+skinparam classAttributeIconSize 0
+
+class TodoList {
+  - items: List<TodoItem>
+  + addItem(title: String, description: String, dueDate: LocalDate, priority: Priority): void
+  + removeItem(index: int): void
+  + updateItem(index: int, title: String, description: String, dueDate: LocalDate, priority: Priority): void
+  + markCompleted(index: int): void
+  + markIncomplete(index: int): void
+  + getItem(index: int): TodoItem
+  + getSize(): int
+  + filterIncomplete(): List<TodoItem>
+  + sortBy(key: SortKey): void
+}
+
+class TodoItem {
+  - title: String
+  - description: String
+  - dueDate: LocalDate
+  - priority: Priority
+  - completed: boolean
+  + TodoItem(title: String, description: String, dueDate: LocalDate, priority: Priority)
+  + edit(title: String, description: String, dueDate: LocalDate, priority: Priority): void
+  + markCompleted(): void
+  + markIncomplete(): void
+  + getTitle(): String
+  + getDescription(): String
+  + getDueDate(): LocalDate
+  + getPriority(): Priority
+  + isCompleted(): boolean
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SortKey {
+  NAME
+  DUE_DATE
+  PRIORITY
+}
+
+TodoList "1" *-- "0..*" TodoItem : contains
+TodoItem --> Priority
+TodoList ..> SortKey
+
+note bottom of TodoList
+  UI and persistence are outside this entity diagram.
+  Auto-save is an application/persistence responsibility.
+  Indexes refer to the current full list. A future filtered UI
+  must map its selected task back to that list before editing.
+end note
+@enduml

@@ -22,6 +22,11 @@ public class TodoList {
     items.remove(index);
   }
 
+  /** Edits the existing item, preserving its position and completion state. */
+  public void updateTitle(int index, String title) {
+    items.get(index).setTitle(title);
+  }
+
   public void toggleCompleted(int index) {
     items.get(index).toggleCompleted();
   }

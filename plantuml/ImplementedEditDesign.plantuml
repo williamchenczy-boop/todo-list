@@ -1,0 +1,43 @@
+@startuml
+!pragma layout smetana
+title Implemented edit feature (selected responsibilities)
+top to bottom direction
+skinparam classAttributeIconSize 0
+
+class TodoListPanel {
+  - todoList: TodoList
+  - textField: JTextField
+  - textModel: DefaultListModel<String>
+  - updateSelected: JButton
+  - editStatus: JLabel
+  - selectItem(textList: JList<String>): void
+  - updateSelectedItem(textList: JList<String>): void
+  - updateTodoModel(): void
+  - save(): void
+}
+
+class TodoList {
+  - items: List<TodoItem>
+  + updateTitle(index: int, title: String): void
+  + getTitle(index: int): String
+  + isCompleted(index: int): boolean
+  + getSize(): int
+}
+
+class TodoItem {
+  - title: String
+  - completed: boolean
+  + setTitle(title: String): void
+  + getTitle(): String
+  + isCompleted(): boolean
+  + toggleCompleted(): void
+}
+
+TodoListPanel --> TodoList : delegates edit
+TodoList "1" *-- "0..*" TodoItem : owns
+
+note right of TodoItem
+  setTitle rejects null/blank titles and strips outer whitespace.
+  The same object keeps its completion state.
+end note
+@enduml

@@ -23,6 +23,8 @@ public class TodoListPanel extends JPanel implements ActionListener {
     private final JTextField textField;
     private final DefaultListModel<String> textModel;
     private final TodoList todoList;
+    private final JButton updateSelected;
+    private final JLabel editStatus;
 
     public TodoListPanel() {
         this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -40,10 +42,19 @@ public class TodoListPanel extends JPanel implements ActionListener {
         JList<String> textList = new JList<>(textModel);
         JScrollPane scrollPane = new JScrollPane(textList);
 
+        updateSelected = new JButton("Update Selected");
+        updateSelected.setEnabled(false);
+        updateSelected.addActionListener(e -> updateSelectedItem(textList));
+        editStatus = new JLabel(" ");
+
         ListSelectionModel listSelectionModel = textList.getSelectionModel();
         listSelectionModel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         listSelectionModel.addListSelectionListener(
-            e -> selectItem(textList)
+            e -> {
+                if (!e.getValueIsAdjusting()) {
+                    selectItem(textList);
+                }
+            }
         );
 
         textList.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -61,9 +72,15 @@ public class TodoListPanel extends JPanel implements ActionListener {
         JButton save = new JButton("Save");
         save.addActionListener(e -> save());
 
+        JPanel buttons = new JPanel();
+        buttons.add(updateSelected);
+        buttons.add(save);
+
+        add(new JLabel("Enter adds a task; Update Selected edits it."));
         add(textField);
         add(scrollPane);
-        add(save);
+        add(buttons);
+        add(editStatus);
     }
 
     private void loadJsonFromFile() {
@@ -164,10 +181,34 @@ public class TodoListPanel extends JPanel implements ActionListener {
 
     private void selectItem(JList<String> textList) {
         int selectedIndex = textList.getSelectedIndex();
+        updateSelected.setEnabled(selectedIndex != -1);
+        editStatus.setText(" ");
 
         if (selectedIndex != -1) {
             textField.setText(todoList.getTitle(selectedIndex));
         }
+    }
+
+    private void updateSelectedItem(JList<String> textList) {
+        int selectedIndex = textList.getSelectedIndex();
+
+        if (selectedIndex == -1) {
+            return;
+        }
+
+        try {
+            todoList.updateTitle(selectedIndex, textField.getText());
+        } catch (IllegalArgumentException e) {
+            editStatus.setText(e.getMessage());
+            textField.requestFocusInWindow();
+            return;
+        }
+
+        updateTodoModel();
+        textList.setSelectedIndex(selectedIndex);
+        editStatus.setText("Title updated. Click Save to keep it.");
+        textField.requestFocusInWindow();
+        textField.selectAll();
     }
 
     @Override
